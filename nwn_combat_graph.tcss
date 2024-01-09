@@ -1,0 +1,34 @@
+NWNLogApp {
+    layout: horizontal;
+    background: $boost;
+    height: 5;
+    margin: 0;
+    min-width: 50;
+    padding: 0;
+}
+
+CombatGraph {
+    content-align: left middle;
+    text-opacity: 60%;
+    background: $panel;
+    color: $text;
+    border: $secondary tall;
+    margin: 1;
+    padding: 0 1;
+}
+
+#healing {
+    color: green;
+}
+
+#dmg_dealt {
+    color: orangered;
+}
+
+#dmg_taken {
+    color: red;
+}
+
+#dmg_mitigated {
+    color: cyan;
+}
