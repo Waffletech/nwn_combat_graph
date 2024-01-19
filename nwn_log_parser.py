@@ -79,7 +79,7 @@ class NWNLogParser():
             if not self.max_time or t_m > self.max_time:
                 self.max_time = t_m
                 
-            if ' damages ' in line and '[DM]' not in line:
+            if ' damages ' in line and '[DM]' not in line and 'Battering Ram' not in line:
                 # [CHAT WINDOW TEXT] [Sun Jan  7 12:17:03] Narwen Alendiel damages Melek Scavenger: 10 (10 Cold)
                 # l = line.split('] ')
                 damage_entry = {}
@@ -88,7 +88,7 @@ class NWNLogParser():
                 damage_entry['source'] = l[2].split(' damages ')[0]
                 damage_entry['target'] = l[2].split(' damages ')[1].split(': ')[0]
                 damage_entry['amount'] = int(l[2].split(' damages ')[1].split(': ')[1].split(' (')[0])
-                damage_entry['types'] = l[2].split(' damages ')[1].split(': ')[1].split(' (')[1][0:-1]
+                damage_entry['types'] = self._parse_damage_types(l[2].split(' damages ')[1].split(': ')[1].split(' (')[1][0:-1])
                 self.damage.append(damage_entry)
                 if damage_entry['source'] == self.character_name:
                     self.damage_dealt.append(damage_entry)
@@ -126,8 +126,36 @@ class NWNLogParser():
                 exp_entry['amount'] = int(l[2].split('Experience Points Gained:')[1])
                 self.experience.append(exp_entry)
 
+    def _parse_damage_types(self, text):
+        # Parse a space separated string:
+        #   1 Fire 2 Cold
+        # Complexity arises that the damage name can have spaces in it too
+        #   1 Negative Energy 2 Fire 1 Cold
+        # This isn't the most elegant algorithm
+        damage_dict = {}
+        digits = '0123456789'
+        damage_amount = ''
+        damage_type = ''
+        for i in range(0, len(text)):
+            if text[i] in digits:
+                # if we have a damage_type that means we've switched from non-digits back to digits
+                # we can store this in the dict before clearing damage_type out
+                if damage_type != '':
+                    damage_dict[damage_type.strip()] = int(damage_amount)
+                    damage_type = ''
+                damage_amount += text[i]
+            elif text[i] != ' ':
+                # Capture everything else in damage_type, including spaces 
+                # We strip leading/trailing spaces later
+                damage_type += text[i]
+        # We don't switch back from non-digits to digits for the last (or singular) entry
+        # Capture that here
+        if damage_type.strip() != '':
+            damage_dict[damage_type.strip()] = int(damage_amount)
+        return damage_dict
+    
     def update(self):
-        for line in Pygtail(self.log_filename):
+        for line in Pygtail(self.log_filename, encoding='cp850'):
             self._parse_log_line(line)
 
         # update sums and totals
