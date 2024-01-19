@@ -20,6 +20,11 @@ class NWNLogParser():
         mitigation
         experience
         
+    damage is further categorized in two properties for convenience
+    damage still contains all of the damage events, these are subsets of that:
+        damage_dealt
+        damage_taken
+        
     These all have the following structure:
         time: The timestamp of this event
         time_min: The timestamp of this event rounded down to the minute
@@ -27,8 +32,12 @@ class NWNLogParser():
         amount: How much healing, damage, xp etc
     The damage data also has:
         target: who was the damage applied to?
-        types: An unparsed list of damage types and amounts
-            example: 10 Cold 2 Negative Energy
+        types: dictionary of damage types and amounts
+            example: 
+            {
+                'Cold': 10,
+                'Negative Energy': 2,
+            }
         
     Usage:
         nwn = NWNLogParser('Johnny Neverwinter')
@@ -78,8 +87,8 @@ class NWNLogParser():
                 self.min_time = t_m
             if not self.max_time or t_m > self.max_time:
                 self.max_time = t_m
-                
-            if ' damages ' in line and '[DM]' not in line and 'Battering Ram' not in line:
+            # Make sure this isn't a placeable/npc speaking with the word ' damages ' in it
+            if ' damages ' in line and '[DM]' not in line and '(' in line and ')' in line:
                 # [CHAT WINDOW TEXT] [Sun Jan  7 12:17:03] Narwen Alendiel damages Melek Scavenger: 10 (10 Cold)
                 # l = line.split('] ')
                 damage_entry = {}
@@ -165,32 +174,36 @@ class NWNLogParser():
         self.damage_mitigated_per_min.clear()
         self.experience_per_min.clear()
         
-        for h in _daterange(self.min_time, self.max_time):
-            healing_this_min = 0
-            damage_dealt_this_min = 0
-            damage_taken_this_min = 0
-            damage_mitigated_this_min = 0
-            xp_this_min = 0
-            
-            for x in self.healing:
-                if x['time_min'] == h:
-                    healing_this_min += x['amount']
-            for x in self.damage_dealt:
-                if x['time_min'] == h:
-                    damage_dealt_this_min += x['amount']
-            for x in self.damage_taken:
-                if x['time_min'] == h:
-                    damage_taken_this_min += x['amount']
-            for x in self.mitigation:
-                if x['time_min'] == h:
-                    damage_mitigated_this_min += x['amount']
-            for x in self.experience:
-                if x['time_min'] == h:
-                    xp_this_min += x['amount']
-            
-            self.healing_per_min.append(healing_this_min)
-            self.damage_taken_per_min.append(damage_taken_this_min)
-            self.damage_dealt_per_min.append(damage_dealt_this_min)
-            self.damage_mitigated_per_min.append(damage_mitigated_this_min)
-            self.experience_per_min.append(xp_this_min)
+        if self.min_time is None and self.max_time is None:
+            # This can happen when the nwn client was started but no games/servers were joined
+            pass
+        else:
+            for h in _daterange(self.min_time, self.max_time):
+                healing_this_min = 0
+                damage_dealt_this_min = 0
+                damage_taken_this_min = 0
+                damage_mitigated_this_min = 0
+                xp_this_min = 0
+                
+                for x in self.healing:
+                    if x['time_min'] == h:
+                        healing_this_min += x['amount']
+                for x in self.damage_dealt:
+                    if x['time_min'] == h:
+                        damage_dealt_this_min += x['amount']
+                for x in self.damage_taken:
+                    if x['time_min'] == h:
+                        damage_taken_this_min += x['amount']
+                for x in self.mitigation:
+                    if x['time_min'] == h:
+                        damage_mitigated_this_min += x['amount']
+                for x in self.experience:
+                    if x['time_min'] == h:
+                        xp_this_min += x['amount']
+                
+                self.healing_per_min.append(healing_this_min)
+                self.damage_taken_per_min.append(damage_taken_this_min)
+                self.damage_dealt_per_min.append(damage_dealt_this_min)
+                self.damage_mitigated_per_min.append(damage_mitigated_this_min)
+                self.experience_per_min.append(xp_this_min)
         
