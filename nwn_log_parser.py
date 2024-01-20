@@ -152,6 +152,7 @@ class NWNLogParser():
                 if damage_type != '':
                     damage_dict[damage_type.strip()] = int(damage_amount)
                     damage_type = ''
+                    damage_amount = ''
                 damage_amount += text[i]
             elif text[i] != ' ':
                 # Capture everything else in damage_type, including spaces 
